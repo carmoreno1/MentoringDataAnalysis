@@ -12,6 +12,7 @@ class MoviesAnalysis(object):
         self.movies = self.get_movies()
 
     def get_dict_reader_movies(self):
+        """Return a DictReader iterator where each csv's row is a dictionary"""
         try:
             self.file = open(file=self.path, mode='r', encoding="utf8", newline='')
             dict_reader_movie = csv.DictReader(self.file)
@@ -24,6 +25,7 @@ class MoviesAnalysis(object):
             raise Exception(f"Error unexpected {exception}")
 
     def get_movies(self):
+        """Return a list with dictionaries, where each one is a row in CSV file"""
         try:
             movies = [row for row in self.get_dict_reader_movies()]
             return movies
@@ -73,11 +75,15 @@ class MoviesAnalysis(object):
     def movies_by_year(self, more_releases=True):
         movies_with_title_year = filter(lambda row: row["title_year"] != '', self.movies)
         years = [row["title_year"] for row in movies_with_title_year]
+        # Counter() is a type of dictionary used for counting how many times appear an element inside a list.
         count_movies_by_year = Counter(years)
         year = max(count_movies_by_year, key=count_movies_by_year.get) if more_releases else min(count_movies_by_year, key=count_movies_by_year.get)
         return year
 
     def get_social_media(self, actor):
+        """Return Actor's social media
+        TODO: Use filter + in operator, the idea is not itereate all self.movies by each actor_#
+        """
         social_media_actor_1 = [
             row["actor_1_facebook_likes"] for row in self.movies if row["actor_1_name"] == actor]
 
@@ -95,6 +101,9 @@ class MoviesAnalysis(object):
             return social_media_actor_3[0]
 
     def get_best_film(self, actor):
+        """Return Actor's social media
+        TODO: Use filter + in operator, the idea is not itereate all self.movies by each actor_#
+        """
         best_movie_actor_1 = [
             row["imdb_score"] for row in self.movies if row["actor_1_name"] == actor]
 
@@ -112,6 +121,11 @@ class MoviesAnalysis(object):
             return max(best_movie_actor_3)
 
     def get_actors(self):
+        """This method Return a list of dictionaries, each one has information about the actors as follow:
+        - actor: Actor's name.
+        - social_media: facebook likes.
+        - best_film: Score of the best film where that actor has performed
+        - Number performance: How many times that actor has made a performance."""
         actors_by_movie = [[row["actor_1_name"], row["actor_2_name"],row["actor_3_name"]] for row in self.movies]
 
         all_actors = [] #List of unique actors.
@@ -145,16 +159,21 @@ class MoviesAnalysis(object):
         genre_information = [{row["title_year"]: {row["genres"]: int(row["gross"])}} for row in movies_with_year if row["gross"] and row["title_year"]]
         genre_information_by_years = defaultdict(list)
 
+        # Genres are separated by pipe (|). This cycle builts a list (genre_information) where each element is a dictionary
+        # formed as follow: {year: Counter({genre: gross})}, for example: {'2009': Counter({'Action': 2340012})}
         for info in genre_information:
             for year, genres_info in info.items():
                 info[year] = {genres.split('|')[index]: genres_info[genres] for index, genres in enumerate(genres_info)}
                 info[year] = Counter(info[year])
 
 
+        # This cycle builts a dictionary where the key is the year and the value is an array with the genre information:
+        # for example: {'2009': [Counter({'Action': 760505847}), Counter({'Adventure': 301956980}), Counter({'Action': 402076689}), Counter({'Action': 125320003})}]
         for info in genre_information:
             for year, genre in info.items():
                 genre_information_by_years[year].append(genre)
 
+        # For each year, sum the gross of each genre using Counter()
         for year in years:
             genre_information_by_years[year] = reduce(operator.add, genre_information_by_years[year])
             genre = max(genre_information_by_years[year], key=genre_information_by_years[year].get) if winning\
@@ -187,7 +206,6 @@ class MoviesAnalysis(object):
             f"{row['director_name'].strip()}: {row[field]} likes" for row in director_order_by_reputation
         ]
         return response
-        #return response
 
     def screen_results(self):
         new_line = '\n\t'
